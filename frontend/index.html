@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiteSecure360 - Website Health Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* A very light gray */
+        }
+        .spinner, .status-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        .status-spinner {
+             border-color: rgba(79, 70, 229, 0.2);
+             border-top-color: #4f46e5;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .sidebar-link.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .status-item.active {
+            background-color: #eef2ff;
+            border-color: #c7d2fe;
+        }
+        .tab-button.active {
+            border-bottom-color: #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        /* Exclude buttons from PDF export */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex-col hidden md:flex">
+            <div class="p-6 flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-lg">
+                    <i data-lucide="shield-check" class="text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">SiteSecure360</h1>
+            </div>
+            <nav class="flex-1 px-4 py-2">
+                <h2 class="px-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Navigation</h2>
+                <a href="#" id="new-audit-btn-sidebar" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <i data-lucide="file-plus-2" class="w-5 h-5"></i>
+                    <span>New Audit</span>
+                </a>
+                <a href="#" id="audit-history-btn-sidebar" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <i data-lucide="history" class="w-5 h-5"></i>
+                    <span>Audit History</span>
+                </a>
+
+                <h2 class="px-2 mt-6 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Audit Categories</h2>
+                <div id="audit-categories-list" class="space-y-1 px-1">
+                    <!-- Categories will be injected by JS -->
+                </div>
+                
+                <h2 class="px-2 mt-6 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Integration</h2>
+                <div id="ai-integration-list" class="space-y-1 px-1">
+                    <!-- AI link will be injected by JS -->
+                </div>
+            </nav>
+            <div class="p-4 mt-auto">
+                <p class="text-center text-xs text-gray-400">&copy; 2025 SiteSecure360. All Rights Reserved.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <div id="main-content-area">
+                <!-- Header Section -->
+                <header id="main-header" class="mb-8">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Website Health Check</h1>
+                        <div class="bg-purple-100 text-purple-800 text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3V1m0 22v-2m4.6-4.6L20 20M4 4l3.4 3.4M1 12h2m18 0h2M4.6 19.4L8 16M20 4l-3.4 3.4"></path></svg>
+                            Integrated with Gemini AI
+                        </div>
+                    </div>
+                    <p class="text-lg text-gray-500 mt-1">Comprehensive security, performance, SEO, and accessibility analysis for your website.</p>
+                </header>
+
+                <!-- URL Input Section -->
+                <div id="input-section" class="max-w-3xl mx-auto mt-12">
+                     <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+                        <div class="text-center mb-8">
+                            <div class="inline-block bg-indigo-100 p-3 rounded-xl">
+                                <i data-lucide="globe-2" class="w-8 h-8 text-indigo-600"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mt-4">Start Your Website Audit</h2>
+                            <p class="text-gray-500">Get a comprehensive analysis of your website's health in just minutes.</p>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="url-input" class="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                <input type="url" id="url-input" placeholder="Enter your website URL (e.g., example.com)" class="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 transition duration-300">
+                            </div>
+                             <div>
+                                <label for="audit-name-input" class="block text-sm font-medium text-gray-700 mb-1">Audit Name (Optional)</label>
+                                <input type="text" id="audit-name-input" placeholder="Give this audit a custom name" class="w-full bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 transition duration-300">
+                            </div>
+                        </div>
+                        <button id="scan-btn" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition duration-300 flex items-center justify-center gap-2">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                            <span>Start Comprehensive Audit</span>
+                        </button>
+                        <p id="error-message" class="text-red-500 mt-4 text-center hidden"></p>
+                     </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div id="progress-section" class="max-w-3xl mx-auto mt-12 hidden">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+                        <div class="text-center mb-8">
+                            <div class="inline-block bg-indigo-100 p-3 rounded-xl">
+                               <i data-lucide="loader-circle" class="w-8 h-8 text-indigo-600 animate-spin"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mt-4">Analyzing Your Website</h2>
+                            <p class="text-gray-500">Please wait while we perform a comprehensive audit. This may take a minute.</p>
+                        </div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span id="progress-text" class="text-sm font-medium text-gray-600">Initiating Scan...</span>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 flex-1">
+                                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <span id="progress-percentage" class="text-sm font-bold text-indigo-600">0%</span>
+                        </div>
+                        <div id="status-list" class="space-y-3 mt-8"></div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-section" class="hidden"></div>
+                
+                <!-- History Section -->
+                <div id="history-section" class="hidden"></div>
+
+                <!-- Category Checks Section -->
+                <div id="category-checks-section" class="hidden"></div>
+
+                <!-- AI Integration Section -->
+                <div id="ai-integration-section" class="hidden"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+        const urlInput = document.getElementById('url-input');
+        const scanBtn = document.getElementById('scan-btn');
+        const errorMessage = document.getElementById('error-message');
+        const inputSection = document.getElementById('input-section');
+        const progressSection = document.getElementById('progress-section');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const statusList = document.getElementById('status-list');
+        const resultsSection = document.getElementById('results-section');
+        const historySection = document.getElementById('history-section');
+        const categoryChecksSection = document.getElementById('category-checks-section');
+        const aiIntegrationSection = document.getElementById('ai-integration-section');
+        const newAuditBtnSidebar = document.getElementById('new-audit-btn-sidebar');
+        const auditHistoryBtnSidebar = document.getElementById('audit-history-btn-sidebar');
+        const auditCategoriesList = document.getElementById('audit-categories-list');
+        const aiIntegrationList = document.getElementById('ai-integration-list');
+        const mainHeader = document.getElementById('main-header');
+
+        let radarChartInstance = null;
+
+        const AUDIT_CATEGORIES = {
+            security: { name: 'Security', icon: 'shield', color: 'text-red-500', description: 'Checks for vulnerabilities & threats.', checks: ['SSL/TLS Configuration', 'HTTP Strict Transport Security (HSTS)', 'Content Security Policy (CSP)', 'Clickjacking Protection (X-Frame-Options)', 'Insecure Cookies'] },
+            performance: { name: 'Performance', icon: 'zap', color: 'text-orange-500', description: 'Analyzes loading speed & bottlenecks.', checks: ['Image Optimization', 'Render-Blocking Resources', 'Browser Caching Policies', 'Server Response Time', 'Content Delivery Network (CDN) Usage'] },
+            seo: { name: 'SEO', icon: 'trending-up', color: 'text-green-500', description: 'Validates search engine optimization.', checks: ['Meta Tags (Title & Description)', 'Header Tags (H1, H2)', 'Robots.txt & Sitemap', 'Broken Link Analysis', 'Mobile-Friendliness'] },
+            accessibility: { name: 'Accessibility', icon: 'person-standing', color: 'text-blue-500', description: 'Tests for WCAG compliance.', checks: ['Image Alt Attributes', 'Text Contrast Ratios', 'Descriptive Link Text', 'Keyboard Navigation', 'ARIA Landmark Roles'] }
+        };
+
+        scanBtn.addEventListener('click', startScan);
+        urlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startScan(); });
+        newAuditBtnSidebar.addEventListener('click', (e) => { e.preventDefault(); showInputScreen(); });
+        auditHistoryBtnSidebar.addEventListener('click', (e) => { e.preventDefault(); showHistoryScreen(); });
+
+        function initializeApp() {
+            renderAuditCategories();
+            renderAiIntegration();
+            lucide.createIcons();
+        }
+
+        function renderAuditCategories() {
+            auditCategoriesList.innerHTML = '';
+            Object.keys(AUDIT_CATEGORIES).forEach(key => {
+                const category = AUDIT_CATEGORIES[key];
+                const categoryEl = document.createElement('a');
+                categoryEl.href = '#';
+                categoryEl.className = 'sidebar-link flex items-start gap-3 px-2 py-2 text-gray-600 hover:bg-gray-100 rounded-lg';
+                categoryEl.dataset.categoryId = key;
+                categoryEl.innerHTML = `
+                    <i data-lucide="${category.icon}" class="w-5 h-5 ${category.color} mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <span class="font-medium text-gray-700">${category.name}</span>
+                        <p class="text-xs text-gray-500">${category.description}</p>
+                    </div>`;
+                categoryEl.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showCategoryChecksScreen(key);
+                });
+                auditCategoriesList.appendChild(categoryEl);
+            });
+        }
+
+        function renderAiIntegration() {
+            aiIntegrationList.innerHTML = `
+                <a href="#" id="gemini-info-btn" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500"><path d="M12 3V1m0 22v-2m4.6-4.6L20 20M4 4l3.4 3.4M1 12h2m18 0h2M4.6 19.4L8 16M20 4l-3.4 3.4"></path></svg>
+                    <span>Gemini AI</span>
+                </a>
+            `;
+            document.getElementById('gemini-info-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                showAiIntegrationScreen();
+            });
+        }
+
+        function setActiveSidebar(activeButton) {
+            document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active'));
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+        }
+
+        function hideAllSections() {
+            [inputSection, progressSection, resultsSection, historySection, categoryChecksSection, aiIntegrationSection].forEach(s => s.classList.add('hidden'));
+            mainHeader.classList.add('hidden');
+        }
+
+        function showInputScreen() {
+            hideAllSections();
+            resultsSection.innerHTML = '';
+            inputSection.classList.remove('hidden');
+            mainHeader.classList.remove('hidden');
+            setActiveSidebar(newAuditBtnSidebar);
+        }
+        
+        function showHistoryScreen() {
+            hideAllSections();
+            mainHeader.classList.remove('hidden');
+            historySection.classList.remove('hidden');
+            setActiveSidebar(auditHistoryBtnSidebar);
+            renderHistoryList();
+        }
+
+        function showCategoryChecksScreen(categoryId) {
+            hideAllSections();
+            mainHeader.classList.remove('hidden');
+            categoryChecksSection.classList.remove('hidden');
+            setActiveSidebar(document.querySelector(`.sidebar-link[data-category-id="${categoryId}"]`));
+            renderCategoryChecks(categoryId);
+        }
+
+        function showAiIntegrationScreen() {
+            hideAllSections();
+            mainHeader.classList.remove('hidden');
+            aiIntegrationSection.classList.remove('hidden');
+            setActiveSidebar(document.getElementById('gemini-info-btn'));
+            renderAiIntegrationContent();
+        }
+        
+        function startScan() {
+            const url = urlInput.value.trim();
+            if (!isValidUrl(url)) {
+                errorMessage.textContent = 'Please enter a valid URL';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            errorMessage.classList.add('hidden');
+            hideAllSections();
+            progressSection.classList.remove('hidden');
+            setActiveSidebar(null);
+            
+            runBackendAudit(url);
+        }
+
+        function setupProgressScreen() {
+            statusList.innerHTML = '';
+            const categories = [
+                { id: 'security', name: 'Analyzing Security', icon: 'shield' },
+                { id: 'performance', name: 'Testing Performance', icon: 'zap' },
+                { id: 'seo', name: 'Checking SEO Optimization', icon: 'trending-up' },
+                { id: 'accessibility', name: 'Evaluating Accessibility', icon: 'person-standing' },
+            ];
+            categories.forEach(cat => {
+                const item = document.createElement('div');
+                item.id = `status-${cat.id}`;
+                item.className = 'status-item flex items-center justify-between p-4 rounded-lg bg-white border border-gray-200 transition-all';
+                item.innerHTML = `<div class="flex items-center gap-3"><i data-lucide="${cat.icon}" class="w-5 h-5 text-gray-400"></i><span class="font-medium text-gray-600">${cat.name}</span></div><div id="status-icon-${cat.id}" class="w-5 h-5"></div>`;
+                statusList.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function updateCategoryStatus(categoryId, status) {
+            const item = document.getElementById(`status-${categoryId}`);
+            const iconContainer = document.getElementById(`status-icon-${categoryId}`);
+            if (!item || !iconContainer) return;
+
+            document.querySelectorAll('.status-item').forEach(el => el.classList.remove('active'));
+            iconContainer.innerHTML = '';
+
+            if (status === 'active') {
+                item.classList.add('active');
+                iconContainer.innerHTML = '<div class="status-spinner"></div>';
+            } else if (status === 'done') {
+                item.classList.remove('active');
+                iconContainer.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        async function runBackendAudit(url) {
+            setupProgressScreen();
+            
+            const steps = [
+                { category: 'security', text: 'Performing security checks...', duration: 1500, progress: 25 },
+                { category: 'performance', text: 'Running performance & SEO audits...', duration: 20000, progress: 75 }, // Lighthouse takes time
+                { category: 'seo', text: 'Finalizing Lighthouse report...', duration: 1000, progress: 90 },
+                { category: 'accessibility', text: 'Finalizing accessibility checks...', duration: 1000, progress: 95 },
+            ];
+
+            let totalProgress = 0;
+            let lastCategory = null;
+
+            function animateProgress(start, end, duration) {
+                let current = start;
+                const step = (end - start) / (duration / 50);
+                const interval = setInterval(() => {
+                    current += step;
+                    if (current >= end) {
+                        clearInterval(interval);
+                        progressBar.style.width = `${end}%`;
+                        progressPercentage.textContent = `${end}%`;
+                        return;
+                    }
+                    progressBar.style.width = `${current}%`;
+                    progressPercentage.textContent = `${Math.round(current)}%`;
+                }, 50);
+            }
+
+            const runStep = async (index) => {
+                if (index >= steps.length) return;
+                const step = steps[index];
+
+                if (lastCategory) updateCategoryStatus(lastCategory, 'done');
+                updateCategoryStatus(step.category, 'active');
+                progressText.textContent = step.text;
+                animateProgress(totalProgress, step.progress, step.duration);
+                totalProgress = step.progress;
+                lastCategory = step.category;
+
+                await new Promise(resolve => setTimeout(resolve, step.duration));
+                await runStep(index + 1);
+            };
+
+            runStep(0);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Network response was not ok');
+                }
+
+                const auditData = await response.json();
+                
+                if (lastCategory) updateCategoryStatus(lastCategory, 'done');
+
+                progressBar.style.width = `100%`;
+                progressPercentage.textContent = `100%`;
+                progressText.textContent = 'Compiling report...';
+
+                setTimeout(() => {
+                    progressSection.classList.add('hidden');
+                    const auditName = document.getElementById('audit-name-input').value;
+                    displayResults(url, auditName, auditData);
+                }, 500);
+
+            } catch (error) {
+                console.error('Failed to fetch audit results:', error);
+                progressSection.classList.add('hidden');
+                showInputScreen();
+                
+                let friendlyErrorMessage = 'An unknown error occurred.';
+                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    friendlyErrorMessage = 'Could not connect to the backend server. Please ensure the server is running and try again.';
+                } else {
+                    friendlyErrorMessage = error.message;
+                }
+                errorMessage.textContent = `Error: ${friendlyErrorMessage}`;
+                errorMessage.classList.remove('hidden');
+            }
+        }
+
+        function displayResults(url, auditName, savedAuditData) {
+            if (!savedAuditData) {
+                console.error("No audit data to display.");
+                showInputScreen();
+                errorMessage.textContent = "Could not retrieve audit data.";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            if (!savedAuditData.isFromHistory) {
+                 saveAuditToHistory(url, auditName, savedAuditData);
+            }
+           
+            hideAllSections();
+            renderReport(url, savedAuditData);
+            resultsSection.classList.remove('hidden');
+            setActiveSidebar(null);
+        }
+
+        function renderReport(url, auditData) {
+            const overallScore = Math.round((auditData.security.score + auditData.performance.score + auditData.seo.score + auditData.accessibility.score) / 4);
+            
+            const allIssues = Object.values(auditData).filter(cat => cat && Array.isArray(cat.issues)).flatMap(cat => cat.issues);
+            const criticalIssues = allIssues.filter(i => i && i.priority === 'critical').length;
+            const mediumIssues = allIssues.filter(i => i && i.priority === 'medium').length;
+            const lowIssues = allIssues.filter(i => i && i.priority === 'low').length;
+            
+            const scoreCardColor = getScoreColor(overallScore, false, true);
+            
+            resultsSection.innerHTML = `
+                <div id="report-content-wrapper">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-indigo-100 p-3 rounded-xl hidden sm:block"><i data-lucide="globe-2" class="w-8 h-8 text-indigo-600"></i></div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 break-words">Audit of ${new URL(url).hostname}</h2>
+                                <p class="text-gray-500">Completed on ${new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' })}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-4 md:mt-0 no-print">
+                            <button id="export-pdf-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm transition duration-300 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Export Report</button>
+                            <button id="new-audit-btn-main" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">New Audit</button>
+                        </div>
+                    </div>
+                    <div id="report-content">
+                        <div class="rounded-2xl p-8 text-white ${scoreCardColor} mb-8">
+                            <div class="text-center">
+                                <h3 class="text-8xl font-bold">${overallScore}</h3>
+                                <p class="text-xl font-semibold opacity-90">Overall Health Score</p>
+                            </div>
+                            <div class="flex justify-center gap-8 mt-6 text-center">
+                                <div><p class="text-3xl font-bold">${criticalIssues}</p><p class="opacity-80">Critical/High Issues</p></div>
+                                <div><p class="text-3xl font-bold">${mediumIssues}</p><p class="opacity-80">Medium Issues</p></div>
+                                <div><p class="text-3xl font-bold">${lowIssues}</p><p class="opacity-80">Low Issues</p></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            ${createCategoryCardHTML(auditData.security)}
+                            ${createCategoryCardHTML(auditData.performance)}
+                            ${createCategoryCardHTML(auditData.seo)}
+                            ${createCategoryCardHTML(auditData.accessibility)}
+                        </div>
+                        
+                        <div class="mt-12 bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+                             <h2 class="text-3xl font-bold text-gray-900 text-center">Industry Benchmark</h2>
+                             <p class="text-gray-500 mt-2 text-center max-w-2xl mx-auto">See how your website scores compare to the average scores of other websites in your industry.</p>
+                             <div class="max-w-2xl mx-auto mt-6"><canvas id="radar-chart"></canvas></div>
+                        </div>
+
+                        <div class="mt-12 border-b border-gray-200 no-print">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <button id="tab-issues" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg text-gray-500 hover:text-indigo-600 hover:border-gray-300">Detailed Issues</button>
+                                <button id="tab-gemini" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg text-gray-500 hover:text-indigo-600 hover:border-gray-300">Gemini Solution</button>
+                            </nav>
+                        </div>
+                        <div id="tab-content-issues" class="mt-8"></div>
+                        <div id="tab-content-gemini" class="mt-8 hidden">
+                            <div id="gemini-section" class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+                                <div id="gemini-header" class="text-center">
+                                    <h2 id="gemini-title" class="text-3xl font-bold text-gray-900">AI-Powered Action Plan</h2>
+                                    <p id="gemini-subtitle" class="text-gray-500 mt-2 max-w-2xl mx-auto">Let our AI assistant analyze these findings and generate a prioritized, step-by-step plan to improve your website's health.</p>
+                                </div>
+                                <div id="gemini-actions" class="mt-6 text-center">
+                                    <button id="gemini-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 flex items-center justify-center gap-2 mx-auto">
+                                        <span id="gemini-btn-text">✨ Generate Action Plan</span>
+                                        <div id="gemini-spinner" class="spinner hidden"></div>
+                                    </button>
+                                    <button id="download-gemini-btn" class="hidden mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm transition duration-300 flex items-center justify-center gap-2 mx-auto">
+                                        <i data-lucide="download" class="w-4 h-4"></i>Download Gemini Report
+                                    </button>
+                                </div>
+                                <div id="gemini-report" class="prose max-w-none prose-p:text-gray-600 prose-headings:text-gray-900 prose-strong:text-gray-900 hidden mt-8"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('tab-content-issues').innerHTML = createDetailedIssuesHTML(auditData);
+            document.getElementById('new-audit-btn-main').addEventListener('click', showInputScreen);
+            document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
+            document.getElementById('gemini-btn').addEventListener('click', () => generateAIReport(auditData));
+            
+            const tabIssues = document.getElementById('tab-issues');
+            const tabGemini = document.getElementById('tab-gemini');
+            const contentIssues = document.getElementById('tab-content-issues');
+            const contentGemini = document.getElementById('tab-content-gemini');
+
+            tabIssues.addEventListener('click', () => {
+                tabIssues.classList.add('active');
+                tabGemini.classList.remove('active');
+                contentIssues.classList.remove('hidden');
+                contentGemini.classList.add('hidden');
+            });
+            tabGemini.addEventListener('click', () => {
+                tabGemini.classList.add('active');
+                tabIssues.classList.remove('active');
+                contentGemini.classList.remove('hidden');
+                contentIssues.classList.add('hidden');
+            });
+            
+            lucide.createIcons();
+            createRadarChart(auditData);
+        }
+        
+        async function generateAIReport(auditData) {
+            if (!auditData) return;
+            const geminiBtn = document.getElementById('gemini-btn');
+            const geminiReport = document.getElementById('gemini-report');
+            const geminiTitle = document.getElementById('gemini-title');
+            const geminiSubtitle = document.getElementById('gemini-subtitle');
+            const downloadBtn = document.getElementById('download-gemini-btn');
+
+            geminiBtn.disabled = true;
+            geminiBtn.innerHTML = '<div class="spinner"></div> Generating...';
+            geminiReport.classList.add('hidden');
+            geminiReport.innerHTML = '';
+
+            let prompt = `You are an expert web development consultant. Based on the following list of issues found during a website audit, provide a prioritized, step-by-step action plan for the website owner. Group the recommendations logically. Focus on clear, actionable advice. Start with the most critical issues. The response should be well-formatted HTML. Use headings (h3, h4), paragraphs, lists (ul, li), and bold tags where appropriate.\n\nHere are the issues:\n\n`;
+            for (const key in auditData) {
+                const category = auditData[key];
+                if (category && Array.isArray(category.issues)) {
+                    prompt += `<h3>${category.title}</h3><ul>`;
+                    if (category.issues.length > 0) {
+                        category.issues.forEach(issue => { prompt += `<li><strong>${issue.title} (Priority: ${issue.priority}):</strong> ${issue.description}</li>`; });
+                    } else { prompt += `<li>No major issues found.</li>`; }
+                    prompt += '</ul>';
+                }
+            }
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = "GEMINI_API_KEY"; // Use your API key here for local testing
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
+                    geminiReport.innerHTML = result.candidates[0].content.parts[0].text;
+                    geminiReport.classList.remove('hidden');
+                    geminiSubtitle.classList.add('hidden');
+                    
+                    geminiTitle.innerHTML = `<div class="flex items-center justify-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M12 3V1m0 22v-2m4.6-4.6L20 20M4 4l3.4 3.4M1 12h2m18 0h2M4.6 19.4L8 16M20 4l-3.4 3.4"></path></svg>
+                        <span>Gemini Solution</span>
+                    </div>`;
+
+                    downloadBtn.classList.remove('hidden');
+                    downloadBtn.addEventListener('click', downloadGeminiReport);
+                } else { throw new Error("Unexpected API response structure."); }
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                geminiReport.innerHTML = `<p class="text-red-500">Sorry, the AI report could not be generated at this time.</p>`;
+                geminiReport.classList.remove('hidden');
+            } finally {
+                geminiBtn.disabled = false;
+                geminiBtn.innerHTML = '✨ Regenerate Action Plan';
+            }
+        }
+
+        async function downloadGeminiReport() {
+            const downloadBtn = document.getElementById('download-gemini-btn');
+            downloadBtn.innerHTML = '<div class="spinner w-5 h-5"></div> Downloading...';
+            downloadBtn.disabled = true;
+
+            const reportContent = document.getElementById('gemini-report');
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                await doc.html(reportContent, {
+                    callback: function(doc) {
+                        doc.save(`Gemini-AI-Report-${new URL(urlInput.value || 'report').hostname}.pdf`);
+                    },
+                    x: 10,
+                    y: 10,
+                    width: 190,
+                    windowWidth: 800
+                });
+
+            } catch (error) {
+                console.error("PDF Export failed:", error);
+                alert("Sorry, there was an error creating the Gemini report PDF.");
+            } finally {
+                downloadBtn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i>Download Gemini Report';
+                lucide.createIcons();
+                downloadBtn.disabled = false;
+            }
+        }
+
+        async function exportToPDF() {
+            const exportBtn = document.getElementById('export-pdf-btn');
+            exportBtn.innerHTML = '<div class="spinner w-5 h-5"></div> Exporting...';
+            exportBtn.disabled = true;
+            const reportContent = document.getElementById('report-content-wrapper');
+            try {
+                const canvas = await html2canvas(reportContent, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Website-Audit-Report-${new URL(urlInput.value || 'report').hostname}.pdf`);
+            } catch (error) {
+                console.error("PDF Export failed:", error);
+                alert("Sorry, there was an error creating the PDF.");
+            } finally {
+                exportBtn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i>Export Report';
+                lucide.createIcons();
+                exportBtn.disabled = false;
+            }
+        }
+        
+        function getPriorityBadge(priority) {
+            switch (priority) {
+                case 'critical': return '<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">Critical</span>';
+                case 'medium': return '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">Medium</span>';
+                case 'low': return '<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">Low</span>';
+                default: return '';
+            }
+        }
+
+        function createDetailedIssuesHTML(auditData) {
+            let html = '';
+            for (const key in auditData) {
+                const category = auditData[key];
+                if (category && category.issues && category.issues.length > 0) {
+                    html += `<h2 class="text-3xl font-bold text-gray-900 mt-8 mb-4">${category.title} Issues</h2>`;
+                    html += '<div class="space-y-4">';
+                    category.issues.forEach(issue => {
+                        html += `
+                            <div class="bg-white p-6 rounded-2xl border border-gray-200">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="text-xl font-bold text-gray-800">${issue.title}</h3>
+                                    ${getPriorityBadge(issue.priority)}
+                                </div>
+                                <p class="text-gray-600 mt-2">${issue.description}</p>
+                                <div class="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p class="font-semibold text-green-700 flex items-center gap-2"><i data-lucide="wrench" class="w-4 h-4"></i>Recommendation</p>
+                                    <p class="text-gray-700 mt-1">${issue.recommendation}</p>
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                }
+            }
+            return html;
+        }
+
+        function createCategoryCardHTML(categoryData) {
+            const { title, icon, score, issues } = categoryData;
+            const colors = getScoreColor(score, true);
+            return `
+                <div class="rounded-2xl p-6 border ${colors.border} ${colors.bg}">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="${icon}" class="w-6 h-6 ${colors.text}"></i>
+                            <h3 class="text-lg font-bold ${colors.text}">${title}</h3>
+                        </div>
+                        <p class="text-2xl font-bold ${colors.text}">${score} <span class="text-base font-medium">/ 100</span></p>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                        <div class="${colors.progress} h-2.5 rounded-full" style="width: ${score}%"></div>
+                    </div>
+                    <p class="text-sm ${colors.text} opacity-80 mt-2">${issues.length} issues found</p>
+                </div>`;
+        }
+        
+        // --- Audit History Functions ---
+        function saveAuditToHistory(url, name, auditData) {
+            const history = JSON.parse(localStorage.getItem('auditHistory')) || [];
+            const newAudit = { id: Date.now(), url: url, name: name || new URL(url).hostname, date: new Date().toISOString(), data: auditData };
+            history.unshift(newAudit);
+            localStorage.setItem('auditHistory', JSON.stringify(history.slice(0, 20)));
+        }
+
+        function renderHistoryList() {
+            const history = JSON.parse(localStorage.getItem('auditHistory')) || [];
+            let html = `<h2 class="text-3xl font-bold text-gray-900 mb-6">Audit History</h2>`;
+            if (history.length === 0) {
+                html += `<div class="text-center bg-white p-8 rounded-2xl border border-gray-200"><p class="text-gray-500">No past audits found. Run a new audit to get started!</p></div>`;
+            } else {
+                html += `<div class="space-y-4">`;
+                history.forEach(audit => {
+                    const overallScore = Math.round((audit.data.security.score + audit.data.performance.score + audit.data.seo.score + audit.data.accessibility.score) / 4);
+                    html += `
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200 flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-lg text-gray-800">${audit.name}</p>
+                                <p class="text-sm text-gray-500">${new URL(audit.url).hostname}</p>
+                                <p class="text-xs text-gray-400 mt-1">${new Date(audit.date).toLocaleString()}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <p class="font-bold text-2xl ${getScoreColor(overallScore)}">${overallScore}</p>
+                                    <p class="text-sm text-gray-500">Overall Score</p>
+                                </div>
+                                <button class="view-report-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold py-2 px-4 rounded-lg transition" data-audit-id="${audit.id}">View Report</button>
+                            </div>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+            historySection.innerHTML = html;
+            document.querySelectorAll('.view-report-btn').forEach(btn => btn.addEventListener('click', (e) => viewSavedReport(e.currentTarget.dataset.auditId)));
+        }
+
+        function viewSavedReport(auditId) {
+            const history = JSON.parse(localStorage.getItem('auditHistory')) || [];
+            const audit = history.find(a => a.id == auditId);
+            if (audit) {
+                displayResults(audit.url, audit.name, { ...audit.data, isFromHistory: true });
+            }
+        }
+        
+        function renderCategoryChecks(categoryId) {
+            const category = AUDIT_CATEGORIES[categoryId];
+            let html = `<h2 class="text-3xl font-bold text-gray-900 mb-6">${category.name} Checks</h2>`;
+            html += '<div class="space-y-3">';
+            category.checks.forEach(check => {
+                html += `
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+                        <span class="text-gray-700">${check}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            categoryChecksSection.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function renderAiIntegrationContent() {
+            aiIntegrationSection.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+                    <div class="text-center">
+                        <div class="inline-block bg-purple-100 p-3 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M12 3V1m0 22v-2m4.6-4.6L20 20M4 4l3.4 3.4M1 12h2m18 0h2M4.6 19.4L8 16M20 4l-3.4 3.4"></path></svg>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900 mt-4">Gemini AI Integration</h2>
+                        <p class="text-gray-500 mt-2 max-w-2xl mx-auto">This application leverages the power of Google's Gemini AI to transform your audit results into actionable, expert-level advice.</p>
+                    </div>
+                    <div class="mt-8 space-y-6 text-gray-700">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">What does Gemini do?</h3>
+                            <p class="mt-2">After your website audit is complete, the raw data—including all identified issues and their priorities—is sent to the Gemini model. It acts as an expert web development consultant to analyze these findings.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">Your Personalized Action Plan</h3>
+                            <p class="mt-2">The result is a clear, prioritized, and step-by-step action plan, which you can find in the "Gemini Solution" tab of your report. Instead of just seeing a list of problems, you get a logical guide on what to fix first and why it's important, helping you improve your site's health efficiently.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createRadarChart(auditData) {
+            const ctx = document.getElementById('radar-chart').getContext('2d');
+            const data = {
+                labels: ['Security', 'Performance', 'SEO', 'Accessibility'],
+                datasets: [
+                    {
+                        label: 'Your Website',
+                        data: [auditData.security.score, auditData.performance.score, auditData.seo.score, auditData.accessibility.score],
+                        fill: true,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgb(79, 70, 229)',
+                        pointBackgroundColor: 'rgb(79, 70, 229)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(79, 70, 229)'
+                    },
+                    {
+                        label: 'Industry Average',
+                        data: [78, 82, 85, 80], // Mock average data
+                        fill: true,
+                        backgroundColor: 'rgba(107, 114, 128, 0.2)',
+                        borderColor: 'rgb(107, 114, 128)',
+                        pointBackgroundColor: 'rgb(107, 114, 128)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(107, 114, 128)'
+                    }
+                ]
+            };
+            if (radarChartInstance) {
+                radarChartInstance.destroy();
+            }
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: data,
+                options: {
+                    elements: { line: { borderWidth: 3 } },
+                    scales: { r: { angleLines: { display: false }, suggestedMin: 0, suggestedMax: 100, pointLabels: { font: { size: 16 } } } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+        
+        function isValidUrl(string) { try { new URL(string); return true; } catch (_) { return false; } }
+        
+        function getScoreColor(score, forCard = false, forMainCard = false) {
+            if (forMainCard) {
+                if (score < 50) return 'bg-red-600';
+                if (score < 90) return 'bg-yellow-500';
+                return 'bg-indigo-600';
+            }
+            if (forCard) {
+                if (score < 50) return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', progress: 'bg-red-500' };
+                if (score < 90) return { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-800', progress: 'bg-yellow-400' };
+                return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', progress: 'bg-green-500' };
+            }
+            if (score < 50) return 'text-red-500';
+            if (score < 90) return 'text-yellow-500';
+            return 'text-green-500';
+        }
+        
+        initializeApp();
+    </script>
+</body>
+</html>
