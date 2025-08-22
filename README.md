@@ -1,4 +1,4 @@
-# SiteSecure360 - AI-Powered Website Audit Tool
+# SecureScan360 - AI-Powered Website Audit Tool
 
 ![SiteSecure360 Dashboard](https://i.imgur.com/your-screenshot-url.png) 
 *Note: You should replace the image URL above with a real screenshot of your application's dashboard.*
