@@ -1,7 +1,7 @@
 # SecureScan360 - AI-Powered Website Audit Tool
 
 ![SiteSecure360 Dashboard](https://i.imgur.com/your-screenshot-url.png) 
-*Note: You should replace the image URL above with a real screenshot of your application's dashboard.*
+
 
 **SiteSecure360** is a comprehensive website auditing platform that evaluates a website for security vulnerabilities, performance bottlenecks, SEO issues, and accessibility compliance. It acts as a digital health check, scanning a website thoroughly and producing clear, actionable reports with AI-powered solutions from Google's Gemini.
 
